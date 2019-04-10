@@ -27,7 +27,7 @@ if [ ! -z "$JENKINS_BUILD_CONTAINER" ]; then
 fi
 
 echo " - Run new container ..."
-docker run -it -d --name "${CONT_NAME}" centos:latest sleep inf
+docker run -it -d --name "${CONT_NAME}" -p 8080:8080 centos:latest sleep inf
 
 JENKINS_BUILD_ID=$(docker ps -a | grep "${CONT_NAME}" | awk ' { print $1 } ')
 echo " - JENKINS_BUILD_ID: ${JENKINS_BUILD_ID}"
@@ -44,4 +44,8 @@ docker exec -it "${JENKINS_BUILD_ID}" bash -c "set -e && cd /root && wget -O mav
 
 echo " - Download Jenkins source code ..."
 docker exec -it "${JENKINS_BUILD_ID}" bash -c "cd /root && git clone https://github.com/jenkinsci/jenkins.git"
-docker exec -it "${JENKINS_BUILD_ID}" bash -c "PATH=/root/apache-maven-${MAVEN_VER}/bin:$PATH && cd /root/jenkins && mvn package"
+docker exec -it "${JENKINS_BUILD_ID}" bash -c "PATH=/root/apache-maven-${MAVEN_VER}/bin:$PATH && cd /root/jenkins && mvn package -DskipTests"
+docker exec -it "${JENKINS_BUILD_ID}" bash -c "set -e && mkdir -vp /opt/jenkins && cp -v /root/jenkins/war/target/jenkins.war /opt/jenkins"
+docker exec -d -it "${JENKINS_BUILD_ID}" bash -c "cd /opt/jenkins && nohup java -jar jenkins.war"
+docker exec -it "${JENKINS_BUILD_ID}" bash -c "sleep 60s && cat /root/.jenkins/secrets/initialAdminPassword"
+
