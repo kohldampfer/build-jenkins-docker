@@ -81,12 +81,17 @@ function build_slave() {
 
 	# now install relevant stuff withing docker container
 	docker exec -it "${SLAVE_ID}" yum update -y
-	docker exec -it "${SLAVE_ID}" yum install -y make openssh-server java-1.8.0-openjdk
+	docker exec -it "${SLAVE_ID}" yum install -y make openssh-server java-1.8.0-openjdk git make gcc gcc-c++
 	docker exec -it "${SLAVE_ID}" bash -c "/usr/bin/ssh-keygen -A"
 	docker exec -it "${SLAVE_ID}" bash -c "nohup /usr/sbin/sshd"
 
 	# create user for ssh into slave from Master
 	docker exec -it "${SLAVE_ID}" bash -c "adduser jenkinsslave && echo jenkinsslave | passwd --stdin jenkinsslave"
+
+	# install cmake
+	docker exec -it "${SLAVE_ID}" bash -c "cd /home/jenkinsslave && git clone https://github.com/Kitware/CMake"
+	docker exec -it "${SLAVE_ID}" bash -c "cd /home/jenkinsslave/CMake && ./bootstrap && make install"
+
 }
 
 create_network "${NETWORK_NAME}"
@@ -109,7 +114,7 @@ fi
 
 echo " - Install all relevant stuff for building Jenkins Master ..."
 docker exec -it "${JENKINS_BUILD_ID}" yum update -y
-docker exec -it "${JENKINS_BUILD_ID}" yum install -y git wget java-1.8.0-openjdk-devel java-1.8.0-openjdk which make openssh-server
+docker exec -it "${JENKINS_BUILD_ID}" yum install -y git wget java-1.8.0-openjdk-devel java-1.8.0-openjdk which make openssh-server gcc gcc-c++
 docker exec -it "${JENKINS_BUILD_ID}" bash -c "set -e && cd /root && wget -O maven.tar.gz ${MAVEN_SRC_URL} && tar xvf maven.tar.gz"
 
 echo " - Download Jenkins source code and compile it ..."
@@ -118,5 +123,10 @@ docker exec -it "${JENKINS_BUILD_ID}" bash -c "PATH=/root/apache-maven-${MAVEN_V
 docker exec -it "${JENKINS_BUILD_ID}" bash -c "set -e && mkdir -vp /opt/jenkins && cp -v /root/jenkins/war/target/jenkins.war /opt/jenkins"
 docker exec -d -it "${JENKINS_BUILD_ID}" bash -c "cd /opt/jenkins && nohup java -jar jenkins.war"
 docker exec -it "${JENKINS_BUILD_ID}" bash -c "/usr/bin/ssh-keygen -A && /usr/sbin/sshd"
+# docker exec -it "${JENKINS_BUILD_ID}" bash -c "sleep 60s && cat /root/.jenkins/secrets/initialAdminPassword"
+
+docker exec -it "${JENKINS_BUILD_ID}" bash -c "cd /root && git clone https://github.com/Kitware/CMake"
+docker exec -it "${JENKINS_BUILD_ID}" bash -c "cd /root/CMake && ./bootstrap && make install"
+
 docker exec -it "${JENKINS_BUILD_ID}" bash -c "sleep 60s && cat /root/.jenkins/secrets/initialAdminPassword"
 
