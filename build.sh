@@ -114,7 +114,7 @@ fi
 
 echo " - Install all relevant stuff for building Jenkins Master ..."
 docker exec -it "${JENKINS_BUILD_ID}" yum update -y
-docker exec -it "${JENKINS_BUILD_ID}" yum install -y git wget java-1.8.0-openjdk-devel java-1.8.0-openjdk which make openssh-server gcc gcc-c++
+docker exec -it "${JENKINS_BUILD_ID}" yum install -y git wget java-1.8.0-openjdk-devel java-1.8.0-openjdk which make openssh-server gcc gcc-c++ graphviz
 docker exec -it "${JENKINS_BUILD_ID}" bash -c "set -e && cd /root && wget -O maven.tar.gz ${MAVEN_SRC_URL} && tar xvf maven.tar.gz"
 
 echo " - Download Jenkins source code and compile it ..."
